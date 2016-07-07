@@ -22,7 +22,7 @@
 %% ------------------------------------------------------------------
 
 -export([
-    set_config/2,
+    set_config/3,
     get_config/1,
     get_configs/0
     ]).
@@ -30,8 +30,9 @@
 start_link(ImplMod) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [ImplMod], []).
 
-set_config(Key, Value) ->
-    gen_server:call(?SERVER, {set_config, {key, Key}, {value, Value}}).
+set_config(Key, Value, Type) ->
+    gen_server:call(?SERVER, {set_config, {key, Key}, {value, Value},
+        {type, Type}}).
 
 get_config(Key) ->
     gen_server:call(?SERVER, {get_config, {key, Key}}).
@@ -48,18 +49,18 @@ init([ImplMod]) ->
     ImplMod:init(),
     {ok, #state{implmod=ImplMod}}.
 
-handle_call({set_config, {key, Key}, {value, Value}}, _From,
+handle_call({set_config, {key, Key}, {value, Value}, {type, Type}}, _From,
         #state{implmod=ImplMod} = State) ->
-    ImplMod:set_config(Key, Value),
+    ImplMod:set_config(Key, Value, Type),
     {reply, ok, State};
 
 handle_call({get_config, {key, Key}}, _From,
         #state{implmod=ImplMod} = State) ->
-    Value = ImplMod:get_config(Key),
-    {reply, {ok, Value}, State};
+    Config = ImplMod:get_config(Key),
+    {reply, {ok, Config}, State};
 
 handle_call(get_configs, _From, #state{implmod=ImplMod} = State) ->
-    PropList= ImplMod:get_configs(),
+    PropList = ImplMod:get_configs(),
     {reply, {ok, PropList}, State};
 
 handle_call(_Request, _From, State) ->

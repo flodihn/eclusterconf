@@ -11,13 +11,13 @@
 -export([
 		init/0,
 		create_db/0,
-        set_config/2,
+        set_config/3,
         get_config/1,
         get_configs/0,
         has_config/1,
 		wipe/0]).
 
--record(eclusterconf, {key, value}).
+-record(eclusterconf, {key, value, type}).
 -define(DB_TABLE, eclusterconf).
 
 init() ->
@@ -43,9 +43,9 @@ create_db() ->
 							{attributes, Attributes}])
 	end.
 
-set_config(Key, Value) ->
+set_config(Key, Value, Type) ->
 	Fun = fun() ->
-		Record = #eclusterconf{key = Key, value = Value},
+		Record = #eclusterconf{key = Key, value = Value, type=Type},
 		mnesia:write(?DB_TABLE, Record, write)
 	end,
 	case mnesia:transaction(Fun) of
@@ -64,7 +64,9 @@ has_config(Key) ->
 get_config(Key) ->
     case mnesia:dirty_read(?DB_TABLE, Key) of
         [Record] ->
-            Record#eclusterconf.value;
+            Value = Record#eclusterconf.value,
+            Type = Record#eclusterconf.type,
+            {Value, Type};
         [] ->
             undefined
     end.
@@ -77,9 +79,9 @@ get_configs('$end_of_table', Acc) ->
     Acc;
 
 get_configs(Key, Acc) ->
-    Value = get_config(Key),
+    {Value, Type} = get_config(Key),
     NextKey = mnesia:dirty_next(?DB_TABLE, Key),
-    get_configs(NextKey, [{Key, Value} | Acc]).
+    get_configs(NextKey, [{Key, Value, Type} | Acc]).
 
 wipe() ->
 	mnesia:clear_table(?DB_TABLE).
