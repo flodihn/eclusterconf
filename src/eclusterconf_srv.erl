@@ -23,7 +23,8 @@
 
 -export([
     set_config/2,
-    get_config/1
+    get_config/1,
+    get_configs/0
     ]).
 
 start_link(ImplMod) ->
@@ -34,6 +35,10 @@ set_config(Key, Value) ->
 
 get_config(Key) ->
     gen_server:call(?SERVER, {get_config, {key, Key}}).
+
+get_configs() ->
+    gen_server:call(?SERVER, get_configs).
+
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -52,6 +57,10 @@ handle_call({get_config, {key, Key}}, _From,
         #state{implmod=ImplMod} = State) ->
     Value = ImplMod:get_config(Key),
     {reply, {ok, Value}, State};
+
+handle_call(get_configs, _From, #state{implmod=ImplMod} = State) ->
+    PropList= ImplMod:get_configs(),
+    {reply, {ok, PropList}, State};
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.

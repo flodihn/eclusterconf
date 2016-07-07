@@ -13,6 +13,7 @@
 		create_db/0,
         set_config/2,
         get_config/1,
+        get_configs/0,
         has_config/1,
 		wipe/0]).
 
@@ -67,6 +68,18 @@ get_config(Key) ->
         [] ->
             undefined
     end.
+
+get_configs() ->
+    FirstKey = mnesia:dirty_first(?DB_TABLE),
+    get_configs(FirstKey, []).
+
+get_configs('$end_of_table', Acc) ->
+    Acc;
+
+get_configs(Key, Acc) ->
+    Value = get_config(Key),
+    NextKey = mnesia:dirty_next(?DB_TABLE, Key),
+    get_configs(NextKey, [{Key, Value} | Acc]).
 
 wipe() ->
 	mnesia:clear_table(?DB_TABLE).
